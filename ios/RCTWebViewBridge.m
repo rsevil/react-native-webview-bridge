@@ -86,6 +86,8 @@ NSString *const RCTWebViewBridgeSchema = @"wvb";
   NSString *_injectedJavaScript;
 }
 
+NSString *const REACT_NATIVE_WEB_VIEW_BRIDGE_EXTENDED_CUSTOM_MENU_ITEMS_SELECTOR = @"_CUSTOM_SELECTOR_";
+
 - (instancetype)initWithFrame:(CGRect)frame
 {
   if ((self = [super initWithFrame:frame])) {
@@ -322,12 +324,14 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:(NSCoder *)aDecoder)
   [webView stringByEvaluatingJavaScriptFromString:webViewBridgeScriptContent];
   //////////////////////////////////////////////////////////////////////////////
 
+    [self loadCustomMenuItems];
+  [self onUIMenuControllerWillHideMenu];
   if (_injectedJavaScript != nil) {
     NSString *jsEvaluationValue = [webView stringByEvaluatingJavaScriptFromString:_injectedJavaScript];
 
     NSMutableDictionary<NSString *, id> *event = [self baseEvent];
     event[@"jsEvaluationValue"] = jsEvaluationValue;
-
+      
     _onLoadingFinish(event);
   }
   // we only need the final 'finishLoad' call so only fire the event when we're actually done loading.
@@ -335,6 +339,88 @@ RCT_NOT_IMPLEMENTED(- (instancetype)initWithCoder:(NSCoder *)aDecoder)
     _onLoadingFinish([self baseEvent]);
   }
 }
+
+// #######################
+// BEGIN CUSTOM MENU ITEMS
+// #######################
+
+- (void)onUIMenuControllerWillHideMenu {
+    
+    NSOperationQueue *mainQueue = [NSOperationQueue mainQueue];
+    [[NSNotificationCenter defaultCenter]
+     addObserverForName:@"UIMenuControllerWillHideMenuNotification"
+     object:nil
+     queue:mainQueue
+     usingBlock:^(NSNotification *notification)
+     {
+         [self loadCustomMenuItems];
+     }];
+}
+
+- (void)loadCustomMenuItems {
+    if (self.menuItems == nil || self.menuItems.count == 0) {
+        NSLog(@"menuItems is nil or empty");
+        return;
+    }
+    
+    UIMenuController *menuController = [UIMenuController sharedMenuController];
+    NSMutableArray *menuControllerItems = [NSMutableArray arrayWithCapacity:self.menuItems.count];
+
+    for(NSString *menuItemName in self.menuItems) {
+        NSString *sel = [NSString stringWithFormat:@"%@%@", REACT_NATIVE_WEB_VIEW_BRIDGE_EXTENDED_CUSTOM_MENU_ITEMS_SELECTOR, menuItemName];
+        UIMenuItem *item = [[UIMenuItem alloc] initWithTitle: menuItemName
+                                                      action: NSSelectorFromString(sel)];
+        [menuControllerItems addObject: item];
+    }
+    
+    menuController.menuItems = menuControllerItems;
+}
+
+- (NSMethodSignature *)methodSignatureForSelector:(SEL)sel
+{
+    if ([super methodSignatureForSelector:sel]) {
+        return [super methodSignatureForSelector:sel];
+    }
+    return [super methodSignatureForSelector:@selector(tappedMenuItem:)];
+}
+
+- (void)forwardInvocation:(NSInvocation *)invocation
+{
+    NSString *sel = NSStringFromSelector([invocation selector]);
+    NSRange match = [sel rangeOfString:REACT_NATIVE_WEB_VIEW_BRIDGE_EXTENDED_CUSTOM_MENU_ITEMS_SELECTOR];
+    if (match.location == 0) {
+        [self tappedMenuItem:[sel substringFromIndex:17]];
+    } else {
+        // THIS SHOULD NEVER HAPPEN
+        // [super forwardInvocation:invocation];
+    }
+}
+
+- (BOOL)canBecomeFirstResponder
+{
+    return YES;
+}
+
+- (BOOL)canPerformAction:(SEL)action withSender:(id)sender
+{
+    NSString *sel = NSStringFromSelector(action);
+    
+    NSRange match = [sel rangeOfString:REACT_NATIVE_WEB_VIEW_BRIDGE_EXTENDED_CUSTOM_MENU_ITEMS_SELECTOR];
+    
+    if (match.location == 0) {
+        return YES;
+    }
+    return [super canPerformAction:action withSender:sender];
+}
+
+- (void)tappedMenuItem:(NSString *)eventType
+{
+    self.onMenuItemSelected(@{@"eventType": eventType});
+}
+
+// #######################
+// END CUSTOM MENU ITEMS
+// #######################
 
 - (NSArray*)stringArrayJsonToArray:(NSString *)message
 {

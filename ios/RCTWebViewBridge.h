@@ -44,6 +44,9 @@ shouldStartLoadForRequest:(NSMutableDictionary<NSString *, id> *)request
 @property (nonatomic, assign) BOOL hideKeyboardAccessoryView;
 @property (nonatomic, copy) NSString *injectedJavaScript;
 
+@property (nonatomic, copy) RCTDirectEventBlock onMenuItemSelected;
+@property (nullable, nonatomic, copy) NSArray<NSString *> *menuItems;
+
 - (void)goForward;
 - (void)goBack;
 - (void)reload;

@@ -171,3 +171,24 @@ var Sample2 = React.createClass({
   }
 });
 ```
+
+## Custom Menu Items (only iOS)
+
+```
+const onMenuItemSelected = ({ nativeEvent: { eventType } }) => {
+  // handle custom menu item selection
+  // eventType holds de same string that was entered on menu items
+}
+
+render() {
+    return (
+      <WebViewBridge
+        ...
+        menuItems={['Foo']}
+        onMenuItemSelected={onMenuItemSelected}
+        ... />
+    );
+  }
+```
+
+Support for Android will be added soon

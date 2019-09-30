@@ -18,4 +18,7 @@
 
 @interface RCTWebViewBridgeManager : RCTViewManager
 
+@property (nonatomic, copy) RCTDirectEventBlock onMenuItemSelected;
+@property (nullable, nonatomic, copy) NSArray<NSString *> *menuItems;
+
 @end
