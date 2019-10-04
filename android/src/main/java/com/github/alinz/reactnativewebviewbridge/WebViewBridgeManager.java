@@ -134,18 +134,10 @@ public class WebViewBridgeManager extends ReactWebViewManager {
             if (_menuItems == null || _menuItems.size() == 0 || type != ActionMode.TYPE_FLOATING)
                 return super.startActionMode(callback, type);
 
-            return super.startActionMode(new ActionMode.Callback() {
+            ActionMode a = super.startActionMode(new ActionMode.Callback() {
                 @Override
                 public boolean onCreateActionMode(ActionMode actionMode, Menu menu) {
-                    boolean prev = callback.onCreateActionMode(actionMode, menu);
-                    for (String item : _menuItems) {
-                        menu.add(item);
-                    }
-//                    menu.add(0,0,0, "Add Lero");
-//                    for (int i = 0; i < _menuItems.length; i++) {
-//                        menu.add(_menuItems[i]);
-//                    }
-                    return prev;
+                    return callback.onCreateActionMode(actionMode, menu);
                 }
 
                 @Override
@@ -162,7 +154,7 @@ public class WebViewBridgeManager extends ReactWebViewManager {
 
                     WritableMap event = Arguments.createMap();
                     event.putString("eventType",
-                        _menuItems.get(_menuItems.indexOf(menuItem.getTitle())));
+                            _menuItems.get(_menuItems.indexOf(menuItem.getTitle())));
 
                     ThemedReactContext reactContext = (ThemedReactContext)getContext();
                     reactContext.getJSModule(RCTEventEmitter.class)
@@ -178,6 +170,14 @@ public class WebViewBridgeManager extends ReactWebViewManager {
                     callback.onDestroyActionMode(actionMode);
                 }
             }, type);
+
+            Menu menu = a.getMenu();
+
+            for (String item : _menuItems) {
+                menu.add(0,item.hashCode(),menu.size(),item);
+            }
+
+            return a;
         }
     }
 }
